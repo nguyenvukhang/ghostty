@@ -271,7 +271,17 @@ class AppDelegate: NSObject,
 
         switch Ghostty.launchSource {
         case .app:
-            // Don't have to do anything.
+            // Don't have to do anything, but we're gonna.
+            applicationDidBecomeActive(.init(name: NSApplication.didBecomeActiveNotification))
+
+            // We run in the background, this forces us to the front.
+            DispatchQueue.main.async {
+                let focusedSurface = TerminalController.all.first?.focusedSurface
+                self.khang_ghosttyNewTab(focusedSurface, "editor")
+                self.khang_ghosttyNewTab(focusedSurface, "compiler")
+                self.khang_ghosttyNewTab(focusedSurface, "l-server")
+                self.khang_ghosttyNewTab(focusedSurface, "l-editor")
+            }
             break
             
         case .zig_run, .cli:
@@ -780,6 +790,21 @@ class AppDelegate: NSObject,
         let config = configAny as? Ghostty.SurfaceConfiguration
 
         _ = TerminalController.newTab(ghostty, from: window, withBaseConfig: config)
+    }
+
+    @objc private func khang_ghosttyNewTab(_ surfaceView: Ghostty.SurfaceView?, _ title: String) {
+        guard let window = surfaceView?.window else { return }
+
+        // We only want to listen to new tabs if the focused parent is
+        // a regular terminal controller.
+        guard window.windowController is TerminalController else { return }
+
+        let notification = Notification(name: Ghostty.Notification.ghosttyNewTab)
+        let configAny = notification.userInfo?[Ghostty.Notification.NewSurfaceConfigKey]
+        let config = configAny as? Ghostty.SurfaceConfiguration
+
+        let tab = TerminalController.newTab(ghostty, from: window, withBaseConfig: config)
+        tab?.focusedSurface?.setTitle(title)
     }
 
     private func setDockBadge(_ label: String? = "•") {
