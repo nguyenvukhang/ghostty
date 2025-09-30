@@ -1,3 +1,6 @@
+khang:
+	zig build -Doptimize=ReleaseFast
+
 init:
 	@echo You probably want to run "zig build" instead.
 .PHONY: init
